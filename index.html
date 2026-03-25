@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>易回复 - 家长群反馈文案生成器</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>易回复</h1>
+    
+        
+        <div class="input-section">
+
+            <div class="keyword-buttons">
+                <button class="keyword-btn" data-keyword="消毒">消毒</button>
+                <button class="keyword-btn" data-keyword="接送">接送</button>
+                <button class="keyword-btn" data-keyword="背诵">背诵</button>
+                <button class="keyword-btn" data-keyword="吃饭">吃饭</button>
+                <button class="keyword-btn" data-keyword="写作业">写作业</button>
+                <button class="keyword-btn" data-keyword="总结">总结</button>
+            </div>
+
+            <div class="manual-input" id="manual-input">
+
+                <div class="input-row">
+                    <label>学生姓名：</label>
+                    <input type="text" id="student-name" placeholder="例如：范子瑶">
+                </div>
+                <div class="input-row">
+                    <label>语文作业：</label>
+                    <input type="text" id="chinese-homework" placeholder="例如：作业一 √ 完成，背诵 不太熟">
+                </div>
+                <div class="input-row">
+                    <label>数学作业：</label>
+                    <input type="text" id="math-homework" placeholder="例如：作业 √ 完成">
+                </div>
+                <div class="input-row">
+                    <label>英语作业：</label>
+                    <input type="text" id="english-homework" placeholder="例如：单词 √ 完成">
+                </div>
+                <div class="input-row">
+                    <label>加练作业：</label>
+                    <input type="text" id="extra-homework" placeholder="例如：数学 √ 完成">
+                </div>
+            </div>
+        </div>
+        
+        <div class="output-section">
+            <h2>生成的文案：</h2>
+            <div id="output" class="output-box"></div>
+            <button id="copy-btn" class="copy-btn">复制文案</button>
+            <button id="regenerate-btn" class="regenerate-btn">重新生成</button>
+        </div>
+        
+
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
