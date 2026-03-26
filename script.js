@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
             item = item.trim();
             if (!item) return '';
             
-            // 先去掉所有标点符号
+            // 先去掉标点符号，但保留数字
             item = item.replace(/[，。！？、；：""''（）【】［］{}《》\s]+/g, '');
             
             // 定义完成和未完成的关键词（仅表示是否完成，不包括完成质量）
@@ -734,23 +734,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // 方法3：尝试按中文序号分割（一、二、三、或 一抄写 二背诵）
-            const chinesePattern = /([一二三四五六七八九十])[、,，\s]*/g;
+            // 匹配中文序号，要求序号后面跟着作业内容
+            const chinesePattern = /([一二三四五六七八九十])[、,，\s]+/g;
             let chineseMatches = [];
             while ((match = chinesePattern.exec(singleItem)) !== null) {
-                chineseMatches.push({
-                    index: match.index,
-                    length: match[0].length
-                });
+                // 检查序号后面是否有内容（不是另一个序号）
+                const afterMatch = singleItem.substring(match.index + match[0].length);
+                if (!afterMatch.match(/^[一二三四五六七八九十\d]/)) {
+                    chineseMatches.push({
+                        index: match.index,
+                        length: match[0].length
+                    });
+                }
             }
             if (chineseMatches.length >= 2) {
                 let splitItems = [];
                 for (let i = 0; i < chineseMatches.length; i++) {
-                    const start = chineseMatches[i].index;
+                    const start = chineseMatches[i].index + chineseMatches[i].length; // 从序号后面开始
                     const end = i < chineseMatches.length - 1 ? chineseMatches[i + 1].index : singleItem.length;
                     const item = singleItem.substring(start, end).trim();
-                    // 去掉序号前缀
-                    const cleanItem = item.replace(/^[一二三四五六七八九十][、,，\s]*/, '');
-                    if (cleanItem) splitItems.push(cleanItem);
+                    if (item) splitItems.push(item);
                 }
                 if (splitItems.length > 0) return splitItems;
             }
