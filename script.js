@@ -598,8 +598,8 @@ document.addEventListener('DOMContentLoaded', function() {
             item = item.trim();
             if (!item) return '';
             
-            // 先去掉标点符号，但保留数字
-            item = item.replace(/[，。！？、；：""''（）【】［］{}《》\s]+/g, '');
+            // 只去掉标点符号，保留数字、汉字和空格
+            item = item.replace(/[，。！？、；：""''（）【】［］{}《》]+/g, '');
             
             // 定义完成和未完成的关键词（仅表示是否完成，不包括完成质量）
             const completeKeywords = ['已完成', '完成', '做完了', '做好了', '写完'];
@@ -710,10 +710,30 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const singleItem = items[0] || content;
             
-            // 方法2：尝试按数字序号分割（1. 2. 3. 或 1、2、3、或 1抄写 2背诵）
-            const numberPattern = /(\d+)[\.、,，\s]*/g;
-            let numberMatches = [];
+            // 方法2：优先尝试按中文序号分割（一、二、三、或 一抄写 二背诵）
+            const chinesePattern = /([一二三四五六七八九十])[、.，\s]+/g;
+            let chineseMatches = [];
             let match;
+            while ((match = chinesePattern.exec(singleItem)) !== null) {
+                chineseMatches.push({
+                    index: match.index,
+                    length: match[0].length
+                });
+            }
+            if (chineseMatches.length >= 2) {
+                let splitItems = [];
+                for (let i = 0; i < chineseMatches.length; i++) {
+                    const start = chineseMatches[i].index + chineseMatches[i].length;
+                    const end = i < chineseMatches.length - 1 ? chineseMatches[i + 1].index : singleItem.length;
+                    const item = singleItem.substring(start, end).trim();
+                    if (item) splitItems.push(item);
+                }
+                return splitItems;
+            }
+            
+            // 方法3：尝试按数字序号分割（1. 2. 3. 或 1、2、3、）
+            const numberPattern = /(\d+)[\.、,，\s]+/g;
+            let numberMatches = [];
             while ((match = numberPattern.exec(singleItem)) !== null) {
                 numberMatches.push({
                     index: match.index,
@@ -723,101 +743,55 @@ document.addEventListener('DOMContentLoaded', function() {
             if (numberMatches.length >= 2) {
                 let splitItems = [];
                 for (let i = 0; i < numberMatches.length; i++) {
-                    const start = numberMatches[i].index;
+                    const start = numberMatches[i].index + numberMatches[i].length;
                     const end = i < numberMatches.length - 1 ? numberMatches[i + 1].index : singleItem.length;
-                    const item = singleItem.substring(start, end).trim();
-                    // 去掉序号前缀
-                    const cleanItem = item.replace(/^\d+[\.、,，\s]*/, '');
-                    if (cleanItem) splitItems.push(cleanItem);
-                }
-                if (splitItems.length > 0) return splitItems;
-            }
-            
-            // 方法3：尝试按中文序号分割（一、二、三、或 一抄写 二背诵）
-            // 匹配中文序号，要求序号后面跟着作业内容
-            const chinesePattern = /([一二三四五六七八九十])[、,，\s]+/g;
-            let chineseMatches = [];
-            while ((match = chinesePattern.exec(singleItem)) !== null) {
-                // 检查序号后面是否有内容（不是另一个序号）
-                const afterMatch = singleItem.substring(match.index + match[0].length);
-                if (!afterMatch.match(/^[一二三四五六七八九十\d]/)) {
-                    chineseMatches.push({
-                        index: match.index,
-                        length: match[0].length
-                    });
-                }
-            }
-            if (chineseMatches.length >= 2) {
-                let splitItems = [];
-                for (let i = 0; i < chineseMatches.length; i++) {
-                    const start = chineseMatches[i].index + chineseMatches[i].length; // 从序号后面开始
-                    const end = i < chineseMatches.length - 1 ? chineseMatches[i + 1].index : singleItem.length;
                     const item = singleItem.substring(start, end).trim();
                     if (item) splitItems.push(item);
                 }
-                if (splitItems.length > 0) return splitItems;
+                return splitItems;
             }
             
-            // 方法4：按完成状态关键词分割（已完成、未完成等）
+            // 方法4：尝试按"作业一"、"作业二"格式分割
+            const zuoyePattern = /作业[一二三四五六七八九十\d][、.，\s]*/g;
+            let zuoyeMatches = [];
+            while ((match = zuoyePattern.exec(singleItem)) !== null) {
+                zuoyeMatches.push({
+                    index: match.index,
+                    length: match[0].length
+                });
+            }
+            if (zuoyeMatches.length >= 2) {
+                let splitItems = [];
+                for (let i = 0; i < zuoyeMatches.length; i++) {
+                    const start = zuoyeMatches[i].index + zuoyeMatches[i].length;
+                    const end = i < zuoyeMatches.length - 1 ? zuoyeMatches[i + 1].index : singleItem.length;
+                    const item = singleItem.substring(start, end).trim();
+                    if (item) splitItems.push(item);
+                }
+                return splitItems;
+            }
+            
+            // 方法5：按完成状态关键词分割（已完成、未完成等）
             const statusPattern = /(已完成|完成|未完成|没完成|做完了|做好了|写完)/g;
             let statusMatches = [];
-            let lastIndex = 0;
             while ((match = statusPattern.exec(singleItem)) !== null) {
-                // 找到状态关键词后，检查后面是否有新的作业开始
-                const afterStatus = singleItem.substring(match.index + match[0].length);
-                // 如果后面跟着句号、感叹号、或者新的作业类型，则分割
-                const nextPart = afterStatus.substring(0, 10);
-                if (nextPart.match(/^[。！？\s]*[一二三四五六七八九十\d]*[、,，\s]*[\u4e00-\u9fa5]/)) {
-                    statusMatches.push(match.index + match[0].length);
-                }
+                statusMatches.push({
+                    index: match.index + match[0].length,
+                    fullMatch: match[0]
+                });
             }
-            if (statusMatches.length >= 1) {
+            if (statusMatches.length >= 2) {
                 let splitItems = [];
                 let start = 0;
                 statusMatches.forEach((splitPoint, i) => {
-                    const item = singleItem.substring(start, splitPoint).trim();
-                    if (item) splitItems.push(item);
-                    start = splitPoint;
+                    if (i < statusMatches.length - 1) {
+                        const item = singleItem.substring(start, splitPoint.index).trim();
+                        if (item) splitItems.push(item);
+                        start = splitPoint.index;
+                    }
                 });
-                // 添加最后一项
                 const lastItem = singleItem.substring(start).trim();
                 if (lastItem) splitItems.push(lastItem);
-                if (splitItems.length >= 2) return splitItems;
-            }
-            
-            // 方法5：按作业类型关键词分割
-            const homeworkTypes = [
-                '抄写', '大练', '背诵', '默写', '阅读', '练习', '作业', '单词', '课文', '作文', 
-                '预习', '复习', '试卷', '练习册', '大练习册', '语文园地', '日积月累',
-                '口算', '计算', '应用题', '填空', '选择', '判断', '连线', '画图',
-                '听写', '朗读', '背诵', '默写', '写话', '日记', '周记',
-                '数学作业', '语文作业', '英语作业', '正式作业', '课堂作业', '家庭作业',
-                '小练', '练习本', '作业本', '习题', '题目', '试题',
-                '语文', '数学', '英语', '科学', '道法', '美术', '音乐',
-                '写字', '书法', '绘画', '手工', '实验', '观察'
-            ];
-            let typePositions = [];
-            
-            homeworkTypes.forEach(type => {
-                let pos = 0;
-                while ((pos = singleItem.indexOf(type, pos)) !== -1) {
-                    const beforeChar = pos > 0 ? singleItem[pos - 1] : ' ';
-                    if (!/[\u4e00-\u9fa5a-zA-Z]/.test(beforeChar)) {
-                        typePositions.push(pos);
-                    }
-                    pos += type.length;
-                }
-            });
-            
-            if (typePositions.length >= 2) {
-                typePositions.sort((a, b) => a - b);
-                let splitItems = [];
-                for (let i = 0; i < typePositions.length; i++) {
-                    const start = typePositions[i];
-                    const end = i < typePositions.length - 1 ? typePositions[i + 1] : singleItem.length;
-                    const item = singleItem.substring(start, end).trim();
-                    if (item) splitItems.push(item);
-                }
                 return splitItems;
             }
             
