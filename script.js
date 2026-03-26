@@ -708,44 +708,91 @@ document.addEventListener('DOMContentLoaded', function() {
                 return items;
             }
             
-            // 方法2：尝试按数字序号分割（1. 2. 3. 或 1、2、3、）
             const singleItem = items[0] || content;
-            const numberPattern = /(?:^|\s)(\d+)[\.、,，\s]+/g;
+            
+            // 方法2：尝试按数字序号分割（1. 2. 3. 或 1、2、3、或 1抄写 2背诵）
+            const numberPattern = /(\d+)[\.、,，\s]*/g;
             let numberMatches = [];
             let match;
             while ((match = numberPattern.exec(singleItem)) !== null) {
-                numberMatches.push(match.index + match[0].indexOf(match[1]));
+                numberMatches.push({
+                    index: match.index,
+                    length: match[0].length
+                });
             }
-            if (numberMatches.length > 1) {
+            if (numberMatches.length >= 2) {
                 let splitItems = [];
                 for (let i = 0; i < numberMatches.length; i++) {
-                    const start = numberMatches[i];
-                    const end = i < numberMatches.length - 1 ? numberMatches[i + 1] : singleItem.length;
+                    const start = numberMatches[i].index;
+                    const end = i < numberMatches.length - 1 ? numberMatches[i + 1].index : singleItem.length;
                     const item = singleItem.substring(start, end).trim();
-                    if (item) splitItems.push(item);
+                    // 去掉序号前缀
+                    const cleanItem = item.replace(/^\d+[\.、,，\s]*/, '');
+                    if (cleanItem) splitItems.push(cleanItem);
                 }
-                return splitItems;
+                if (splitItems.length > 0) return splitItems;
             }
             
-            // 方法3：尝试按中文序号分割（一、二、三、）
-            const chinesePattern = /(?:^|\s)([一二三四五六七八九十])[、,，\s]+/g;
+            // 方法3：尝试按中文序号分割（一、二、三、或 一抄写 二背诵）
+            const chinesePattern = /([一二三四五六七八九十])[、,，\s]*/g;
             let chineseMatches = [];
             while ((match = chinesePattern.exec(singleItem)) !== null) {
-                chineseMatches.push(match.index + match[0].indexOf(match[1]));
+                chineseMatches.push({
+                    index: match.index,
+                    length: match[0].length
+                });
             }
-            if (chineseMatches.length > 1) {
+            if (chineseMatches.length >= 2) {
                 let splitItems = [];
                 for (let i = 0; i < chineseMatches.length; i++) {
-                    const start = chineseMatches[i];
-                    const end = i < chineseMatches.length - 1 ? chineseMatches[i + 1] : singleItem.length;
+                    const start = chineseMatches[i].index;
+                    const end = i < chineseMatches.length - 1 ? chineseMatches[i + 1].index : singleItem.length;
                     const item = singleItem.substring(start, end).trim();
-                    if (item) splitItems.push(item);
+                    // 去掉序号前缀
+                    const cleanItem = item.replace(/^[一二三四五六七八九十][、,，\s]*/, '');
+                    if (cleanItem) splitItems.push(cleanItem);
                 }
-                return splitItems;
+                if (splitItems.length > 0) return splitItems;
             }
             
-            // 方法4：按作业类型关键词分割
-            const homeworkTypes = ['抄写', '大练', '背诵', '默写', '阅读', '练习', '作业', '单词', '课文', '作文', '预习', '复习', '试卷', '练习册', '大练习册', '语文园地', '日积月累'];
+            // 方法4：按完成状态关键词分割（已完成、未完成等）
+            const statusPattern = /(已完成|完成|未完成|没完成|做完了|做好了|写完)/g;
+            let statusMatches = [];
+            let lastIndex = 0;
+            while ((match = statusPattern.exec(singleItem)) !== null) {
+                // 找到状态关键词后，检查后面是否有新的作业开始
+                const afterStatus = singleItem.substring(match.index + match[0].length);
+                // 如果后面跟着句号、感叹号、或者新的作业类型，则分割
+                const nextPart = afterStatus.substring(0, 10);
+                if (nextPart.match(/^[。！？\s]*[一二三四五六七八九十\d]*[、,，\s]*[\u4e00-\u9fa5]/)) {
+                    statusMatches.push(match.index + match[0].length);
+                }
+            }
+            if (statusMatches.length >= 1) {
+                let splitItems = [];
+                let start = 0;
+                statusMatches.forEach((splitPoint, i) => {
+                    const item = singleItem.substring(start, splitPoint).trim();
+                    if (item) splitItems.push(item);
+                    start = splitPoint;
+                });
+                // 添加最后一项
+                const lastItem = singleItem.substring(start).trim();
+                if (lastItem) splitItems.push(lastItem);
+                if (splitItems.length >= 2) return splitItems;
+            }
+            
+            // 方法5：按作业类型关键词分割
+            const homeworkTypes = [
+                '抄写', '大练', '背诵', '默写', '阅读', '练习', '作业', '单词', '课文', '作文', 
+                '预习', '复习', '试卷', '练习册', '大练习册', '语文园地', '日积月累',
+                '口算', '计算', '应用题', '填空', '选择', '判断', '连线', '画图',
+                '听写', '朗读', '背诵', '默写', '写话', '日记', '周记',
+                '数学作业', '语文作业', '英语作业', '正式作业', '课堂作业', '家庭作业',
+                '小练', '练习本', '作业本', '习题', '题目', '试题',
+                '语文', '数学', '英语', '科学', '道法', '美术', '音乐',
+                '写字', '书法', '绘画', '手工', '实验', '观察'
+            ];
             let typePositions = [];
             
             homeworkTypes.forEach(type => {
@@ -759,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            if (typePositions.length > 1) {
+            if (typePositions.length >= 2) {
                 typePositions.sort((a, b) => a - b);
                 let splitItems = [];
                 for (let i = 0; i < typePositions.length; i++) {
