@@ -576,7 +576,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 其他关键词使用预定义模板
             // 随机选择一个模板
             const randomIndex = Math.floor(Math.random() * templates[keyword].length);
-            output.innerHTML = templates[keyword][randomIndex].replace(/\n/g, '<br>');
+            output.textContent = templates[keyword][randomIndex];
         } else {
             output.textContent = '抱歉，暂不支持该关键词，请尝试：清洁、接娃、送娃、背诵、吃饭、写作业、午休、总结';
         }
@@ -924,8 +924,7 @@ document.addEventListener('DOMContentLoaded', function() {
         text += randomEncouragement;
         
         console.log('生成的文案:', text);
-        // 将换行符转换为<br>标签以便在HTML中正确显示
-        output.innerHTML = text.replace(/\n/g, '<br>');
+        output.textContent = text;
     }
     
     // 复制文案函数
@@ -1064,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 随机选择一个模板
         const randomIndex = Math.floor(Math.random() * customTemplates.length);
-        output.innerHTML = customTemplates[randomIndex].replace(/\n/g, '<br>');
+        output.textContent = customTemplates[randomIndex];
     }
     
     // 解析OCR结果并返回解析后的数据

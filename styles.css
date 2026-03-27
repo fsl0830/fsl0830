@@ -392,3 +392,23 @@ button {
         justify-content: center;
     }
 }
+
+.ocr-status {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+    width: 100%;
+    text-align: left;
+}
+
+.ocr-status.processing {
+    color: #ff9800;
+}
+
+.ocr-status.success {
+    color: #4caf50;
+}
+
+.ocr-status.error {
+    color: #f44336;
+}
