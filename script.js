@@ -602,8 +602,8 @@ document.addEventListener('DOMContentLoaded', function() {
             item = item.replace(/[，。！？、；：""''（）【】［］{}《》]+/g, '');
             
             // 定义完成和未完成的关键词（仅表示是否完成，不包括完成质量）
-            const completeKeywords = ['已完成', '完成', '做完了', '做好了', '写完'];
-            const incompleteKeywords = ['未完成', '没完成', '没做完', '未做完', '未写', '待完成'];
+            const completeKeywords = ['已完成', '完成', '做完了', '做好了', '写完', '写好了', '做完', '完成了', '已做', '已写', '完成啦', '做完啦', '写好了', '已完成作业', '完成作业', '作业完成', '作业已完成', '已做完', '已做好', '已写完', '写完毕', '完成完毕', '做完完毕'];
+            const incompleteKeywords = ['未完成', '没完成', '没做完', '未做完', '未写', '待完成', '没写完', '没做好', '未做', '没做', '未写作业', '没写作业', '作业未完成', '作业没完成', '未完成作业', '没完成作业', '待做', '待写', '需要完成', '需要做', '需要写'];
             
             // 自动识别完成状态并替换
             let processed = item;
@@ -772,7 +772,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // 方法5：按完成状态关键词分割（已完成、未完成等）
-            const statusPattern = /(已完成|完成|未完成|没完成|做完了|做好了|写完)/g;
+            const statusPattern = /(已完成|完成|未完成|没完成|做完了|做好了|写完|写好了|做完|完成了|已做|已写|完成啦|做完啦|写好了|已完成作业|完成作业|作业完成|作业已完成|已做完|已做好|已写完|写完毕|完成完毕|做完完毕|没写完|没做好|未做|没做|未写作业|没写作业|作业未完成|作业没完成|未完成作业|没完成作业|待做|待写|需要完成|需要做|需要写)/g;
             let statusMatches = [];
             while ((match = statusPattern.exec(singleItem)) !== null) {
                 statusMatches.push({
@@ -792,6 +792,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 const lastItem = singleItem.substring(start).trim();
                 if (lastItem) splitItems.push(lastItem);
+                return splitItems;
+            }
+            
+            // 方法6：按作业类型关键词分割
+            const homeworkTypes = [
+                '抄写', '大练', '背诵', '默写', '阅读', '练习', '作业', '单词', '课文', '作文', 
+                '预习', '复习', '试卷', '练习册', '大练习册', '语文园地', '日积月累',
+                '口算', '计算', '应用题', '填空', '选择', '判断', '连线', '画图',
+                '听写', '朗读', '背诵', '默写', '写话', '日记', '周记',
+                '数学作业', '语文作业', '英语作业', '正式作业', '课堂作业', '家庭作业',
+                '小练', '练习本', '作业本', '习题', '题目', '试题',
+                '语文', '数学', '英语', '科学', '道法', '美术', '音乐',
+                '写字', '书法', '绘画', '手工', '实验', '观察',
+                '第1页', '第2页', '第3页', '第4页', '第5页', '第6页', '第7页', '第8页', '第9页', '第10页',
+                '第11页', '第12页', '第13页', '第14页', '第15页', '第16页', '第17页', '第18页', '第19页', '第20页',
+                '第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元',
+                'Unit 1', 'Unit 2', 'Unit 3', 'Unit 4', 'Unit 5', 'Unit 6'
+            ];
+            let typePositions = [];
+            
+            homeworkTypes.forEach(type => {
+                let pos = 0;
+                while ((pos = singleItem.indexOf(type, pos)) !== -1) {
+                    const beforeChar = pos > 0 ? singleItem[pos - 1] : ' ';
+                    if (!/[\u4e00-\u9fa5a-zA-Z]/.test(beforeChar)) {
+                        typePositions.push(pos);
+                    }
+                    pos += type.length;
+                }
+            });
+            
+            if (typePositions.length >= 2) {
+                typePositions.sort((a, b) => a - b);
+                let splitItems = [];
+                for (let i = 0; i < typePositions.length; i++) {
+                    const start = typePositions[i];
+                    const end = i < typePositions.length - 1 ? typePositions[i + 1] : singleItem.length;
+                    const item = singleItem.substring(start, end).trim();
+                    if (item) splitItems.push(item);
+                }
                 return splitItems;
             }
             
